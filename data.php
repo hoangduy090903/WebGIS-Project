@@ -1,0 +1,45 @@
+<?php
+header('Content-Type: application/json');
+$host = "localhost";
+$user = "root"; 
+$pass = ""; 
+$db   = "webgis";
+
+$conn = new mysqli($host, $user, $pass, $db);
+if ($conn->connect_error) {
+    die("Kết nối thất bại: " . $conn->connect_error);
+}
+
+// Lấy dữ liệu từ bảng dia_di_san
+$sql = "SELECT *, ST_AsText(geom) as geom_wkt FROM dia_di_san";
+$result = $conn->query($sql);
+
+$geojson = array(
+   'type'      => 'FeatureCollection',
+   'features'  => array()
+);
+
+while($row = $result->fetch_assoc()) {
+    $feature = array(
+        'type' => 'Feature',
+        'geometry' => array(
+            'type' => 'Point',
+            // Sử dụng Toa_Do_X (Kinh độ) và Toa_Do_Y (Vĩ độ)
+            'coordinates' => array((float)$row['Toa_Do_X'], (float)$row['Toa_Do_Y'])
+        ),
+        'properties' => array(
+            'Ky_Hieu' => $row['Ky_Hieu'],
+            'Ten_Geosite' => $row['Ten_Geosite'],
+            'Kieu_Geosite' => $row['Kieu_Geosite'],
+            'Mo_Ta' => $row['Mo_Ta'],
+            'Tieu_Chi' => $row['Tieu_Chi'],
+            'Hinh_Anh' => $row['Hinh_Anh'], // URL hình ảnh
+            'Ma_Tinh' => $row['Ma_Tinh']
+        )
+    );
+    array_push($geojson['features'], $feature);
+}
+
+echo json_encode($geojson);
+$conn->close();
+?>
